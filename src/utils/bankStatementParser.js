@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { lookupAlias } from './aliasEngine';
 
 export function parseBankStatementExcel(workbook, residents = [], existingTransactions = [], existingExpenses = []) {
   const transactions = [];
@@ -245,6 +246,24 @@ function extractSenderName(desc) {
 function matchResidentForTransaction(desc, amount, residents) {
   const normDesc = trNormalize(desc);
   const senderName = extractSenderName(desc);
+
+  // 0. AI Alias Hafıza Motoru — Önceki Manuel Eşleştirmelerden Öğrenilen Tokenlar
+  try {
+    const aliasHit = lookupAlias(senderName, desc);
+    if (aliasHit) {
+      const res = residents.find(r => r.id === aliasHit.residentId);
+      if (res) {
+        return {
+          resident: res,
+          confidence: aliasHit.confidence,
+          extractedSender: senderName,
+          reason: `🧠 AI Hafıza: "${aliasHit.matchedToken}" tokeni önceki manuel eşleştirmeden öğrenildi → ${res.block} ${res.flatNo} (${res.name})`
+        };
+      }
+    }
+  } catch (e) {
+    // alias engine hatası eşleştirmeyi engellemez
+  }
 
   // 1. Direct Name & Alias & Surname Word Matching (High confidence)
   for (const res of residents) {

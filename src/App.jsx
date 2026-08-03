@@ -33,6 +33,7 @@ import LoginModal from './components/LoginModal';
 import MatchModal from './components/MatchModal';
 import KvkkPolicyModal from './components/KvkkPolicyModal';
 import { maskName, maskPhone } from './utils/kvkkMasker';
+import { learnAliasFromMatch } from './utils/aliasEngine';
 
 import { 
   getSiteSettings, 
@@ -83,6 +84,7 @@ export default function App() {
   // Handle Match Confirmation (Alias Learning + Debt Reduction)
   const handleConfirmMatch = ({ transactionId, residentId, category, senderName, amount, saveAlias, deductDebt }) => {
     // 1. Update Bank Transaction status
+    const txn = bankTransactions.find(t => t.id === transactionId);
     setBankTransactions(prev => prev.map(t => {
       if (t.id === transactionId) {
         return {
@@ -98,8 +100,10 @@ export default function App() {
     }));
 
     // 2. Update Resident (Save Alias & Deduct Debt)
+    let targetResident = null;
     setResidents(prev => prev.map(r => {
       if (r.id === residentId) {
+        targetResident = r;
         const updatedAliases = saveAlias && !r.aliases?.includes(senderName)
           ? [...(r.aliases || []), senderName]
           : r.aliases;
@@ -126,6 +130,19 @@ export default function App() {
       }
       return r;
     }));
+
+    // 3. AI Alias Motoruna Öğret — sonraki ekstre yüklemelerinde otomatik eşleştirilecek
+    if (saveAlias && txn) {
+      const resident = residents.find(r => r.id === residentId);
+      if (resident) {
+        const tokenCount = learnAliasFromMatch(senderName, txn.description, resident);
+        addAuditLog(
+          '🧠 AI Alias Öğrendi',
+          `"${senderName}" → ${resident.block} ${resident.flatNo} (${resident.name}) için ${tokenCount} adet token hafızaya alındı`,
+          currentManager
+        );
+      }
+    }
   };
 
   const unmatchedCount = bankTransactions.filter(t => t.status === 'unmatched').length;
