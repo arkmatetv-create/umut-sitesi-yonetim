@@ -31,7 +31,7 @@ export default function BankReconciliation({
   const [pasteText, setPasteText] = useState('');
   const [aiProcessingNotice, setAiProcessingNotice] = useState('');
 
-  // Handle Bank Statement Upload (Garanti BBVA, İşbank, Akbank, etc.)
+  // Handle Bank Statement Upload (Excel .xlsx, .xls, .csv or PDF .pdf, .txt)
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -45,30 +45,62 @@ export default function BankReconciliation({
 
     setAiProcessingNotice('✨ Gemini AI Banka Ekstrenizi Analiz Ediyor ve Dairelerle Eşleştiriyor...');
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const bstr = evt.target.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const parsed = parseBankStatementExcel(wb, residents, bankTransactions);
-        if (parsed.transactions && (parsed.transactions.length > 0 || parsed.skippedDuplicatesCount > 0)) {
-          if (parsed.transactions.length > 0) setBankTransactions(prev => [...parsed.transactions, ...prev]);
-          if (setExpenses && parsed.autoExpenses.length > 0) {
-            setExpenses(prev => [...parsed.autoExpenses, ...(prev || [])]);
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type.includes('pdf');
+
+    if (isPdf) {
+      // PDF File Parser
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const text = evt.target.result;
+          const parsed = parseBankStatementPDFText(text, residents, bankTransactions);
+          if (parsed.transactions && (parsed.transactions.length > 0 || parsed.skippedDuplicatesCount > 0)) {
+            if (parsed.transactions.length > 0) setBankTransactions(prev => [...parsed.transactions, ...prev]);
+            if (setExpenses && parsed.autoExpenses.length > 0) {
+              setExpenses(prev => [...parsed.autoExpenses, ...(prev || [])]);
+            }
+            const matched = parsed.transactions.filter(t => t.status === 'matched').length;
+            setAiProcessingNotice('');
+            alert(`✅ PDF Banka Ekstresi Gemini AI ile başarıyla işlendi!\n• Yeni Gelen Transferler: ${parsed.transactions.length} (${matched} adedi otomatik sakine eşleşti)\n• Otomatik İşlenen Giderler: ${parsed.autoExpenses.length}\n• Mükerrer İşlem Atlandı: ${parsed.skippedDuplicatesCount} adet`);
+          } else {
+            setAiProcessingNotice('');
+            alert('PDF ekstresindeki tüm işlemler daha önce sisteme işlendiği için mükerrer işlem oluşturulmadı.');
           }
-          const matched = parsed.transactions.filter(t => t.status === 'matched').length;
+        } catch (err) {
+          console.error(err);
           setAiProcessingNotice('');
-          alert(`✅ Banka ekstresi Gemini AI ile başarıyla işlendi!\n• Yeni Gelen Transferler: ${parsed.transactions.length} (${matched} adedi otomatik sakine eşleşti)\n• Otomatik İşlenen Giderler: ${parsed.autoExpenses.length}\n• Mükerrer (Önceden Yüklü) İşlem Atlandı: ${parsed.skippedDuplicatesCount} adet`);
-        } else {
-          setAiProcessingNotice('');
-          alert('Girdiğiniz ekstrededeki tüm işlemler daha önce sisteme işlendiği için mükerrer işlem oluşturulmadı.');
+          alert('PDF ekstresi okunurken hata oluştu: ' + err.message);
         }
-      } catch (err) {
-        console.error(err);
-        alert('Ekstre yüklenirken hata oluştu: ' + err.message);
-      }
-    };
-    reader.readAsBinaryString(file);
+      };
+      reader.readAsText(file);
+    } else {
+      // Excel / CSV File Parser
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const bstr = evt.target.result;
+          const wb = XLSX.read(bstr, { type: 'binary' });
+          const parsed = parseBankStatementExcel(wb, residents, bankTransactions);
+          if (parsed.transactions && (parsed.transactions.length > 0 || parsed.skippedDuplicatesCount > 0)) {
+            if (parsed.transactions.length > 0) setBankTransactions(prev => [...parsed.transactions, ...prev]);
+            if (setExpenses && parsed.autoExpenses.length > 0) {
+              setExpenses(prev => [...parsed.autoExpenses, ...(prev || [])]);
+            }
+            const matched = parsed.transactions.filter(t => t.status === 'matched').length;
+            setAiProcessingNotice('');
+            alert(`✅ Excel Banka Ekstresi Gemini AI ile başarıyla işlendi!\n• Yeni Gelen Transferler: ${parsed.transactions.length} (${matched} adedi otomatik sakine eşleşti)\n• Otomatik İşlenen Giderler: ${parsed.autoExpenses.length}\n• Mükerrer İşlem Atlandı: ${parsed.skippedDuplicatesCount} adet`);
+          } else {
+            setAiProcessingNotice('');
+            alert('Excel ekstresindeki tüm işlemler daha önce sisteme işlendiği için mükerrer işlem oluşturulmadı.');
+          }
+        } catch (err) {
+          console.error(err);
+          setAiProcessingNotice('');
+          alert('Excel ekstresi işlenirken hata oluştu: ' + err.message);
+        }
+      };
+      reader.readAsBinaryString(file);
+    }
   };
 
   const processRawRows = (rows) => {

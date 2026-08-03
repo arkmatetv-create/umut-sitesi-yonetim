@@ -56,9 +56,23 @@ export default function App() {
   const [siteSettings, setSiteSettings] = useState(getSiteSettings());
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentManager, setCurrentManager] = useState('Yönetici');
+  const [currentUserRole, setCurrentUserRole] = useState('admin'); // admin, auditor
 
   const [activeMatchTxn, setActiveMatchTxn] = useState(null);
   const [preselectedWhatsAppResident, setPreselectedWhatsAppResident] = useState(null);
+
+  const handleLoginSuccess = (loginData) => {
+    setIsLoggedIn(true);
+    if (typeof loginData === 'object') {
+      setCurrentManager(loginData.name);
+      setCurrentUserRole(loginData.role);
+      addAuditLog('Sisteme Giriş Yapıldı', `${loginData.name} (${loginData.role === 'admin' ? 'Yönetici' : 'Denetçi'}) sisteme girdi`, loginData.name);
+    } else {
+      setCurrentManager(loginData || 'Yönetici');
+      setCurrentUserRole('admin');
+      addAuditLog('Sisteme Giriş Yapıldı', `${loginData} sisteme girdi`, loginData);
+    }
+  };
 
   // Handle Match Confirmation (Alias Learning + Debt Reduction)
   const handleConfirmMatch = ({ transactionId, residentId, category, senderName, amount, saveAlias, deductDebt }) => {
@@ -240,13 +254,15 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', padding: '6px 12px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
-              <UserCheck size={16} color="#10b981" />
-              <span>{currentManager}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: currentUserRole === 'auditor' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.06)', border: currentUserRole === 'auditor' ? '1px solid rgba(245, 158, 11, 0.4)' : 'none', padding: '6px 12px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
+              <UserCheck size={16} color={currentUserRole === 'auditor' ? '#fbbf24' : '#10b981'} />
+              <span style={{ fontWeight: 600, color: currentUserRole === 'auditor' ? '#fbbf24' : '#f8fafc' }}>
+                {currentManager} {currentUserRole === 'auditor' ? '(👁️ Denetçi Modu - Sadece İzleme)' : '(👑 Yönetici)'}
+              </span>
               <button 
                 onClick={() => {
                   setIsLoggedIn(false);
-                  addAuditLog('Oturum Kapatıldı', 'Yönetici çıkış yaptı', currentManager);
+                  addAuditLog('Oturum Kapatıldı', `${currentManager} çıkış yaptı`, currentManager);
                 }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fb7185', marginLeft: '6px', display: 'flex', alignItems: 'center' }}
                 title="Oturumu Kapat"

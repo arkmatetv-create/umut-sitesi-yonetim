@@ -106,6 +106,100 @@ export function parseBankStatementExcel(workbook, residents = [], existingTransa
   };
 }
 
+export function parseBankStatementPDFText(pdfText, residents = [], existingTransactions = [], existingExpenses = []) {
+  const transactions = [];
+  const autoExpenses = [];
+  let skippedDuplicatesCount = 0;
+
+  const existingTxnKeys = new Set(existingTransactions.map(t => `${t.date}_${t.amount}_${t.description}`));
+  const existingExpKeys = new Set(existingExpenses.map(e => `${e.date}_${e.amount}_${e.description}`));
+
+  const lines = pdfText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+  lines.forEach((line, index) => {
+    // Look for lines containing date (DD/MM/YYYY or DD.MM.YYYY) and amounts
+    const dateMatch = line.match(/(\d{2}[\/.]\d{2}[\/.]\d{4})/);
+    const amountMatch = line.match(/(-?\d{1,3}(?:\.\d{3})*(?:,\d{2})?|-?\d+(?:\.\d{2})?)\s*(?:TL|TRY)?/g);
+
+    if (dateMatch && amountMatch) {
+      const rawDate = dateMatch[1];
+      let formattedDate = rawDate;
+      if (rawDate.includes('/')) {
+        const parts = rawDate.split('/');
+        formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      } else if (rawDate.includes('.')) {
+        const parts = rawDate.split('.');
+        formattedDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      }
+
+      // Extract amount
+      let rawAmountStr = amountMatch[amountMatch.length - 1].replace(/\./g, '').replace(',', '.');
+      let amount = parseFloat(rawAmountStr) || 0;
+
+      // Extract description
+      let description = line.replace(dateMatch[0], '').replace(amountMatch[amountMatch.length - 1], '').trim();
+      if (!description) description = `Banka Transferi - Satır ${index + 1}`;
+
+      const normDesc = trNormalize(description);
+      if (normDesc.includes('fon satis') || normDesc.includes('para piyasa') || normDesc.includes('hesaplar arasi')) {
+        return;
+      }
+
+      if (amount < 0) {
+        const positiveAmount = Math.abs(amount);
+        const key = `${formattedDate}_${positiveAmount}_${description}`;
+        if (existingExpKeys.has(key)) {
+          skippedDuplicatesCount++;
+          return;
+        }
+        autoExpenses.push({
+          id: `EXP-PDF-${index + 1}`,
+          date: formattedDate,
+          category: detectExpenseCategory(description),
+          description: description,
+          scope: 'Ortak',
+          amount: positiveAmount,
+          paymentType: 'Banka PDF',
+          receiptNo: `PDF-${index + 1}`
+        });
+        return;
+      }
+
+      if (amount > 0) {
+        const key = `${formattedDate}_${amount}_${description}`;
+        if (existingTxnKeys.has(key)) {
+          skippedDuplicatesCount++;
+          return;
+        }
+
+        const category = detectPaymentCategory(description);
+        const match = matchResidentForTransaction(description, amount, residents);
+
+        transactions.push({
+          id: `TXN-PDF-${formattedDate}-${index + 1}`,
+          date: formattedDate,
+          senderName: match.extractedSender || extractSenderName(description),
+          description: description,
+          amount: amount,
+          iban: '',
+          status: match.resident ? 'matched' : 'unmatched',
+          matchedResidentId: match.resident ? match.resident.id : null,
+          suggestedResidentId: match.suggestedResident ? match.suggestedResident.id : null,
+          matchedCategory: category,
+          matchConfidence: match.confidence,
+          matchedReason: match.reason
+        });
+      }
+    }
+  });
+
+  return {
+    transactions,
+    autoExpenses,
+    skippedDuplicatesCount
+  };
+}
+
 export function trNormalize(str) {
   return String(str || '')
     .replace(/İ/g, 'I').replace(/I/g, 'i').replace(/ı/g, 'i')

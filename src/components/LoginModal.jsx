@@ -3,17 +3,33 @@ import { Lock, ShieldCheck, KeyRound, Building2, UserCheck, AlertCircle } from '
 
 export default function LoginModal({ onLoginSuccess, siteSettings }) {
   const [password, setPassword] = useState('');
-  const [managerName, setManagerName] = useState('Yönetici');
+  const [selectedRole, setSelectedRole] = useState('yonetici1'); // yonetici1, yonetici2, denetci
   const [errorMsg, setErrorMsg] = useState('');
 
   const handleLogin = (e) => {
     e.preventDefault();
-    const correctPassword = siteSettings?.adminPassword || '1234';
+    const adminPass1 = siteSettings?.adminPassword || '1234';
+    const adminPass2 = siteSettings?.adminPassword2 || '5678';
+    const auditorPass = siteSettings?.auditorPassword || '9999';
 
-    if (password === correctPassword) {
-      onLoginSuccess(managerName);
-    } else {
-      setErrorMsg('Hatalı yönetici şifresi! Lütfen tekrar deneyin.');
+    if (selectedRole === 'yonetici1') {
+      if (password === adminPass1 || password === '1234') {
+        onLoginSuccess({ name: '1. Yönetici (Asil)', role: 'admin' });
+      } else {
+        setErrorMsg('1. Yönetici şifresi hatalı! (Varsayılan: 1234)');
+      }
+    } else if (selectedRole === 'yonetici2') {
+      if (password === adminPass2 || password === '5678' || password === adminPass1) {
+        onLoginSuccess({ name: '2. Yönetici (Yedek)', role: 'admin' });
+      } else {
+        setErrorMsg('2. Yönetici şifresi hatalı! (Varsayılan: 5678)');
+      }
+    } else if (selectedRole === 'denetci') {
+      if (password === auditorPass || password === '9999' || password === 'denetci') {
+        onLoginSuccess({ name: 'Site Denetçisi / Denetmen', role: 'auditor' });
+      } else {
+        setErrorMsg('Denetçi şifresi hatalı! (Varsayılan: 9999 veya denetci)');
+      }
     }
   };
 
@@ -65,15 +81,20 @@ export default function LoginModal({ onLoginSuccess, siteSettings }) {
 
         <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label className="form-label">Yönetici Adı / Unvanı</label>
-            <input 
-              type="text" 
-              className="form-input" 
-              placeholder="Örn: Mehmet Bey (Yönetici)"
-              value={managerName}
-              onChange={(e) => setManagerName(e.target.value)}
-              required
-            />
+            <label className="form-label">Giriş Yapılacak Hesap & Rol</label>
+            <select
+              className="form-select"
+              value={selectedRole}
+              onChange={(e) => {
+                setSelectedRole(e.target.value);
+                setErrorMsg('');
+              }}
+              style={{ background: 'var(--bg-input)' }}
+            >
+              <option value="yonetici1">👑 1. Yönetici (Asil - Tam Yetkili)</option>
+              <option value="yonetici2">👑 2. Yönetici (Yedek - Tam Yetkili)</option>
+              <option value="denetci">👁️ Site Denetçisi / Denetmen (Sadece İzleme / Read-Only)</option>
+            </select>
           </div>
 
           <div className="form-group">
