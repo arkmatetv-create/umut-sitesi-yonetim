@@ -301,31 +301,39 @@ export default function App() {
             </div>
 
             <label className="btn btn-primary" style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #10b981, #059669)', fontSize: '0.85rem' }}>
-              <UploadCloud size={16} /> Excel Yükle
+              <UploadCloud size={16} /> Dosya Yükle
               <input 
                 type="file" 
-                accept=".xlsx, .xls, .csv" 
+                accept=".xlsx, .xls, .csv, .pdf, application/pdf" 
                 onChange={(e) => {
                   const file = e.target.files[0];
                   if (!file) return;
+                  const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type.includes('pdf');
                   const reader = new FileReader();
                   reader.onload = (evt) => {
                     try {
-                      const bstr = evt.target.result;
-                      const wb = XLSX.read(bstr, { type: 'binary' });
-                      const parsed = parseSiteManagementExcel(wb);
-                      if (parsed.residents && parsed.residents.length > 0) {
-                        createBackupSnapshot({ residents, expenses, feeCategories, bankTransactions, settings: siteSettings }, 'Excel Yükleme Öncesi Yedeği');
-                        setResidents(parsed.residents);
-                        if (parsed.expenses) setExpenses(parsed.expenses);
-                        addAuditLog('Excel Senkronize Edildi', `${parsed.residents.length} daire aktarıldı`, currentManager);
-                        alert(`✅ ${parsed.residents.length} daire ve tüm borçlar Excel'den başarıyla yüklendi!`);
+                      if (isPdf) {
+                        // PDF — metin tabanlı parse
+                        alert('ℹ️ Ana liste yükleme için Excel (.xlsx) önerilir. PDF banka ekstreleri için "Banka Eşleştirme" sekmesini kullanın.');
+                      } else {
+                        const bstr = evt.target.result;
+                        const wb = XLSX.read(bstr, { type: 'binary' });
+                        const parsed = parseSiteManagementExcel(wb);
+                        if (parsed.residents && parsed.residents.length > 0) {
+                          createBackupSnapshot({ residents, expenses, feeCategories, bankTransactions, settings: siteSettings }, 'Excel Yükleme Öncesi Yedeği');
+                          setResidents(parsed.residents);
+                          if (parsed.expenses) setExpenses(parsed.expenses);
+                          addAuditLog('Excel Senkronize Edildi', `${parsed.residents.length} daire aktarıldı`, currentManager);
+                          alert(`✅ ${parsed.residents.length} daire ve tüm borçlar Excel'den başarıyla yüklendi!`);
+                        }
                       }
                     } catch (err) {
                       console.error(err);
+                      alert('Dosya okunurken hata oluştu: ' + err.message);
                     }
                   };
-                  reader.readAsBinaryString(file);
+                  if (isPdf) reader.readAsText(file);
+                  else reader.readAsBinaryString(file);
                 }} 
                 style={{ display: 'none' }} 
               />

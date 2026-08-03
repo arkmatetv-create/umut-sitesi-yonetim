@@ -156,29 +156,36 @@ export default function ResidentLedger({
 
   // Handle Importing Multi-sheet Excel
   const [importStatus, setImportStatus] = useState('');
-  const handleImportExcelFile = (e) => {
+  const handleImportFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type.includes('pdf');
 
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const bstr = evt.target.result;
-        const wb = XLSX.read(bstr, { type: 'binary' });
-        const parsed = parseSiteManagementExcel(wb);
-        if (parsed.residents && parsed.residents.length > 0) {
-          setResidents(parsed.residents);
-          setImportStatus(`✅ ${parsed.residents.length} daire ve borç dökümü Excel'den yüklendi!`);
-          setTimeout(() => setImportStatus(''), 6000);
+        if (isPdf) {
+          // PDF sakin listesi için düz metin parse
+          alert('ℹ️ Sakin listesi yüklemek için Excel (.xlsx) formatı önerilir. Banka ekstresi için "Banka Eşleştirme" sekmesini kullanın.');
         } else {
-          alert('Excel dosyasında daire listesi okunamadı.');
+          const bstr = evt.target.result;
+          const wb = XLSX.read(bstr, { type: 'binary' });
+          const parsed = parseSiteManagementExcel(wb);
+          if (parsed.residents && parsed.residents.length > 0) {
+            setResidents(parsed.residents);
+            setImportStatus(`✅ ${parsed.residents.length} daire ve borç dökümü Excel'den yüklendi!`);
+            setTimeout(() => setImportStatus(''), 6000);
+          } else {
+            alert('Excel dosyasında daire listesi okunamadı.');
+          }
         }
       } catch (err) {
         console.error(err);
-        alert('Excel dosyası işlenirken hata oluştu: ' + err.message);
+        alert('Dosya işlenirken hata oluştu: ' + err.message);
       }
     };
-    reader.readAsBinaryString(file);
+    if (isPdf) reader.readAsText(file);
+    else reader.readAsBinaryString(file);
   };
 
   return (
@@ -208,11 +215,11 @@ export default function ResidentLedger({
               <Download size={18} color="#fb7185" /> PDF Raporu (.pdf)
             </button>
             <label className="btn btn-primary" style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              <UploadCloud size={18} /> Excel Yükle
+              <UploadCloud size={18} /> Dosya Yükle
               <input 
                 type="file" 
-                accept=".xlsx, .xls, .csv" 
-                onChange={handleImportExcelFile} 
+                accept=".xlsx, .xls, .csv, .pdf, application/pdf" 
+                onChange={handleImportFile} 
                 style={{ display: 'none' }} 
               />
             </label>
