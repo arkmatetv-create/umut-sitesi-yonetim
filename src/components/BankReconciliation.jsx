@@ -15,6 +15,7 @@ import {
 import { parseBankStatementExcel } from '../utils/bankStatementParser';
 import { createBackupSnapshot, addAuditLog } from '../utils/backupManager';
 import { aiSuggestMatchForTransaction } from '../utils/geminiStatementAI';
+import StatementApprovalModal from './StatementApprovalModal';
 
 export default function BankReconciliation({ 
   bankTransactions, 
@@ -30,6 +31,7 @@ export default function BankReconciliation({
   const [pasteModalOpen, setPasteModalOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [aiProcessingNotice, setAiProcessingNotice] = useState('');
+  const [pendingStatementData, setPendingStatementData] = useState(null);
 
   // Handle Bank Statement Upload (Excel .xlsx, .xls, .csv or PDF .pdf, .txt)
   const handleFileUpload = (e) => {
@@ -54,17 +56,11 @@ export default function BankReconciliation({
         try {
           const text = evt.target.result;
           const parsed = parseBankStatementPDFText(text, residents, bankTransactions);
-          if (parsed.transactions && (parsed.transactions.length > 0 || parsed.skippedDuplicatesCount > 0)) {
-            if (parsed.transactions.length > 0) setBankTransactions(prev => [...parsed.transactions, ...prev]);
-            if (setExpenses && parsed.autoExpenses.length > 0) {
-              setExpenses(prev => [...parsed.autoExpenses, ...(prev || [])]);
-            }
-            const matched = parsed.transactions.filter(t => t.status === 'matched').length;
-            setAiProcessingNotice('');
-            alert(`✅ PDF Banka Ekstresi Gemini AI ile başarıyla işlendi!\n• Yeni Gelen Transferler: ${parsed.transactions.length} (${matched} adedi otomatik sakine eşleşti)\n• Otomatik İşlenen Giderler: ${parsed.autoExpenses.length}\n• Mükerrer İşlem Atlandı: ${parsed.skippedDuplicatesCount} adet`);
+          setAiProcessingNotice('');
+          if ((parsed.transactions && parsed.transactions.length > 0) || (parsed.autoExpenses && parsed.autoExpenses.length > 0)) {
+            setPendingStatementData(parsed);
           } else {
-            setAiProcessingNotice('');
-            alert('PDF ekstresindeki tüm işlemler daha önce sisteme işlendiği için mükerrer işlem oluşturulmadı.');
+            alert('PDF ekstresinde yeni işlem bulunamadı veya tümü mükerrer olduğu için atlandı.');
           }
         } catch (err) {
           console.error(err);
@@ -81,17 +77,11 @@ export default function BankReconciliation({
           const bstr = evt.target.result;
           const wb = XLSX.read(bstr, { type: 'binary' });
           const parsed = parseBankStatementExcel(wb, residents, bankTransactions);
-          if (parsed.transactions && (parsed.transactions.length > 0 || parsed.skippedDuplicatesCount > 0)) {
-            if (parsed.transactions.length > 0) setBankTransactions(prev => [...parsed.transactions, ...prev]);
-            if (setExpenses && parsed.autoExpenses.length > 0) {
-              setExpenses(prev => [...parsed.autoExpenses, ...(prev || [])]);
-            }
-            const matched = parsed.transactions.filter(t => t.status === 'matched').length;
-            setAiProcessingNotice('');
-            alert(`✅ Excel Banka Ekstresi Gemini AI ile başarıyla işlendi!\n• Yeni Gelen Transferler: ${parsed.transactions.length} (${matched} adedi otomatik sakine eşleşti)\n• Otomatik İşlenen Giderler: ${parsed.autoExpenses.length}\n• Mükerrer İşlem Atlandı: ${parsed.skippedDuplicatesCount} adet`);
+          setAiProcessingNotice('');
+          if ((parsed.transactions && parsed.transactions.length > 0) || (parsed.autoExpenses && parsed.autoExpenses.length > 0)) {
+            setPendingStatementData(parsed);
           } else {
-            setAiProcessingNotice('');
-            alert('Excel ekstresindeki tüm işlemler daha önce sisteme işlendiği için mükerrer işlem oluşturulmadı.');
+            alert('Excel ekstresinde yeni işlem bulunamadı veya tümü mükerrer olduğu için atlandı.');
           }
         } catch (err) {
           console.error(err);
@@ -101,6 +91,17 @@ export default function BankReconciliation({
       };
       reader.readAsBinaryString(file);
     }
+  };
+
+  const handleConfirmStatementApproval = ({ approvedTransactions, approvedExpenses }) => {
+    if (approvedTransactions && approvedTransactions.length > 0) {
+      setBankTransactions(prev => [...approvedTransactions, ...prev]);
+    }
+    if (setExpenses && approvedExpenses && approvedExpenses.length > 0) {
+      setExpenses(prev => [...approvedExpenses, ...(prev || [])]);
+    }
+    setPendingStatementData(null);
+    alert(`✅ Yönetici Onayı Alındı!\n• ${approvedTransactions.length} adet Gelen Transfer Gelirler/Banka sayfasına eklendi.\n• ${approvedExpenses.length} adet Giden Harcama Giderler sayfasına işlendi.`);
   };
 
   const processRawRows = (rows) => {
@@ -379,7 +380,6 @@ export default function BankReconciliation({
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button className="btn btn-secondary" onClick={() => setPasteModalOpen(false)}>İptal</button>
               <button 
                 className="btn btn-primary"
                 onClick={() => {
@@ -395,6 +395,15 @@ export default function BankReconciliation({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Statement Approval & Verification Modal */}
+      {pendingStatementData && (
+        <StatementApprovalModal 
+          pendingData={pendingStatementData}
+          onConfirm={handleConfirmStatementApproval}
+          onClose={() => setPendingStatementData(null)}
+        />
       )}
     </div>
   );
