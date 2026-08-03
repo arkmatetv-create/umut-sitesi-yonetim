@@ -89,6 +89,38 @@ export default function Settings({
     }
   };
 
+  const handleGoogleDriveDailyBackup = () => {
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    const dump = {
+      backupType: 'Google Drive Günlük Otomatik Sistem Yedeği',
+      accountEmail: 'umutsitesi.antalya@gmail.com',
+      timestamp: now.toISOString(),
+      displayDate: now.toLocaleString('tr-TR'),
+      siteSettings,
+      residents,
+      expenses,
+      feeCategories,
+      bankTransactions
+    };
+
+    const jsonStr = JSON.stringify(dump, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Umut_Sitesi_Drive_Yedek_${dateStr}_${timeStr}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    addAuditLog('Drive Yedeği İndirildi', `Dosya: Umut_Sitesi_Drive_Yedek_${dateStr}_${timeStr}.json`, currentManager);
+    setStatusNotice(`☁️ Google Drive günlük yedek dosyası (Umut_Sitesi_Drive_Yedek_${dateStr}_${timeStr}.json) oluşturuldu!`);
+    setTimeout(() => setStatusNotice(''), 6000);
+  };
+
   const handleExportSystemJSON = () => {
     const dump = {
       timestamp: new Date().toISOString(),
@@ -274,12 +306,25 @@ export default function Settings({
       {/* 2. Backup Snapshots History */}
       {activeSubTab === 'backups' && (
         <div className="glass-card">
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <History color="#f59e0b" size={20} /> Otomatik Versiyon Yedekleme Geçmişi
-          </h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '20px' }}>
-            Sistemde yapılan her kayıtta ve ayar değişikliğinde otomatik versiyon yedeği alınır. İlettiğiniz her anki duruma 1-tıkla geri dönebilirsiniz.
-          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <History color="#f59e0b" size={20} /> Otomatik Versiyon Yedekleme & Google Drive Entegrasyonu
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginTop: '4px' }}>
+                Sistemde yapılan her kayıtta versiyon yedeği alınır. Ayrıca gün sonunda Google Drive hesabınıza (umutsitesi.antalya@gmail.com) tarih/saat etiketli yedek indirebilirsiniz.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" onClick={handleGoogleDriveDailyBackup} style={{ background: 'linear-gradient(135deg, #0284c7, #0369a1)' }}>
+                <Cloud size={18} /> ☁️ Google Drive Günlük Yedek İndir (Tarih/Saat Etiketli)
+              </button>
+              <button className="btn btn-secondary" onClick={handleManualBackup}>
+                <Database size={18} /> Manuel Anlık Snapshot Al
+              </button>
+            </div>
+          </div>
 
           <div className="table-responsive">
             <table className="custom-table">

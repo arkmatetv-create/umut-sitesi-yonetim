@@ -15,15 +15,26 @@ import {
 
 export default function Expenses({ expenses, setExpenses, residents }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState('all'); // all, unmatched, elektrik, tuz, asansor, tadilat
   const [newExpense, setNewExpense] = useState({
     date: new Date().toISOString().split('T')[0],
-    category: 'Asansör Bakım',
+    category: 'Ortak Elektrik Faturası',
     description: '',
     scope: 'Ortak',
     amount: 1500,
     paymentType: 'Banka',
     receiptNo: ''
   });
+
+  const EXPENSE_CATEGORIES = [
+    'Ortak Elektrik Faturası',
+    'Tuz ve Arıtma Malzemesi',
+    'Asansör Periyodik Bakım',
+    'Site Tadilat ve Tamirat',
+    'Kıdem Tazminatı Ödemesi',
+    'Yürüyüş Yolu Malzemesi',
+    'Belirlenemeyen / İşlenecek Giderler'
+  ];
 
   // Calculate totals
   const totalCollected = residents.reduce((acc, r) => {
@@ -35,6 +46,27 @@ export default function Expenses({ expenses, setExpenses, residents }) {
 
   const totalSpent = expenses.reduce((acc, e) => acc + (parseFloat(e.amount) || 0), 0);
   const cashBalance = totalCollected - totalSpent;
+
+  // Filter expenses
+  const filteredExpenses = expenses.filter(e => {
+    if (activeCategoryFilter === 'unmatched') return e.category === 'Belirlenemeyen / İşlenecek Giderler' || e.category === 'Diğer Harcama';
+    if (activeCategoryFilter === 'elektrik') return e.category === 'Ortak Elektrik Faturası';
+    if (activeCategoryFilter === 'tuz') return e.category === 'Tuz ve Arıtma Malzemesi';
+    if (activeCategoryFilter === 'asansor') return e.category === 'Asansör Periyodik Bakım';
+    if (activeCategoryFilter === 'tadilat') return e.category === 'Site Tadilat ve Tamirat';
+    return true;
+  });
+
+  const unmatchedCount = expenses.filter(e => e.category === 'Belirlenemeyen / İşlenecek Giderler' || e.category === 'Diğer Harcama').length;
+
+  const handleCategorizeExpense = (expenseId, newCategory) => {
+    setExpenses(prev => prev.map(e => {
+      if (e.id === expenseId) {
+        return { ...e, category: newCategory };
+      }
+      return e;
+    }));
+  };
 
   const handleAddExpense = (e) => {
     e.preventDefault();

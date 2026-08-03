@@ -18,12 +18,20 @@ export default function Dashboard({
   setActiveTab,
   onOpenMatchModal 
 }) {
+  const [debtDateScope, setDebtDateScope] = useState('last_month_end'); // last_month_end (Temmuz 31), include_current (Ağustos)
+
   // Calculations
-  const totalResidents = residents.length;
-  
-  const totalAidatDebts = residents.reduce((acc, r) => acc + (r.debts.aidat || 0), 0);
+  const totalResidents = residents.length; // 41 Daire
+  const monthlyExpectedDues = totalResidents * 2250; // 41 x 2250 = 92.250 TL
+
+  // Calculate current month collected dues from bank transactions
+  const currentMonthTxns = bankTransactions.filter(t => t.status === 'matched' && t.matchedCategory === 'aidat');
+  const currentMonthCollected = currentMonthTxns.reduce((acc, t) => acc + (t.amount || 0), 0);
+  const collectionPercentage = Math.min(100, Math.round((currentMonthCollected / monthlyExpectedDues) * 100)) || 0;
+
+  const totalAidatDebts = residents.reduce((acc, r) => acc + (r.debts?.aidat || 0), 0);
   const totalExtraDebts = residents.reduce((acc, r) => {
-    return acc + (r.debts.kidem || 0) + (r.debts.yuruyus || 0) + (r.debts.asansor || 0);
+    return acc + (r.debts?.kidem || 0) + (r.debts?.yuruyus || 0);
   }, 0);
   const grandTotalDebt = totalAidatDebts + totalExtraDebts;
 
@@ -32,8 +40,50 @@ export default function Dashboard({
 
   return (
     <div className="fade-in">
+      {/* Month-Based Debt Evaluation Filter Banner */}
+      <div className="glass-card" style={{ marginBottom: '20px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(79, 70, 229, 0.08) 100%)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrendingUp color="#818cf8" size={20} /> Ay Bazlı Borç & Tahsilat Değerlendirmesi
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              İçinde bulunulan ay henüz bitmediği için borçlar varsayılan olarak geçen ay sonu (Temmuz 31) itibariyle hesaplanır.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Borç Değerlendirme Kapsamı:</span>
+            <select 
+              className="form-select" 
+              value={debtDateScope} 
+              onChange={(e) => setDebtDateScope(e.target.value)}
+              style={{ background: 'var(--bg-input)', fontSize: '0.88rem' }}
+            >
+              <option value="last_month_end">📅 Geçen Ay Sonu İtibariyle (Temmuz 31)</option>
+              <option value="include_current">📆 Güncel Ay Dahil (Ağustos)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Stat Cards */}
       <div className="stat-grid">
+        <div className="glass-card stat-card">
+          <div className="stat-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+            <Wallet size={26} />
+          </div>
+          <div className="stat-info">
+            <div className="stat-label">Ay İçi Anlık Tahsilat Durumu</div>
+            <div className="stat-value" style={{ color: '#10b981' }}>
+              ₺{currentMonthCollected.toLocaleString('tr-TR')}
+            </div>
+            <div className="stat-subtext">
+              Beklenen: ₺{monthlyExpectedDues.toLocaleString('tr-TR')} (41 Daire x ₺2.250) | Oran: %{collectionPercentage}
+            </div>
+          </div>
+        </div>
+
         <div className="glass-card stat-card">
           <div className="stat-icon" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>
             <Building2 size={26} />
@@ -50,7 +100,9 @@ export default function Dashboard({
             <AlertCircle size={26} />
           </div>
           <div className="stat-info">
-            <div className="stat-label">Toplam Tahsil Edilecek Borç</div>
+            <div className="stat-label">
+              {debtDateScope === 'last_month_end' ? 'Temmuz Sonu İtibariyle Borç' : 'Ağustos Dahil Toplam Borç'}
+            </div>
             <div className="stat-value" style={{ color: '#fb7185' }}>
               ₺{grandTotalDebt.toLocaleString('tr-TR')}
             </div>

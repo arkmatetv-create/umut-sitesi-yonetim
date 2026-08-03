@@ -127,13 +127,15 @@ function detectPaymentCategory(desc) {
 
 function detectExpenseCategory(desc) {
   const d = trNormalize(desc);
-  if (d.includes('asansor')) return 'Asansör Bakım';
-  if (d.includes('hirdavat') || d.includes('malzeme') || d.includes('satis')) return 'Yürüyüş Yolu Malzeme';
-  if (d.includes('elektrik') || d.includes('ck akdeniz') || d.includes('enerji')) return 'Ortak Elektrik Faturası';
-  if (d.includes('bahce') || d.includes('cim') || d.includes('peyzaj')) return 'Bahçe Bakımı & Sulama';
-  if (d.includes('temizlik')) return 'Temizlik ve Çöp Temizlik';
-  if (d.includes('kidem')) return 'Kıdem Tazminatı Ödemesi';
-  return 'Diğer Harcama';
+  if (d.includes('maas') || d.includes('gorevli') || d.includes('kapici') || d.includes('personel')) return 'Görevli Maaşı';
+  if (d.includes('sgk') || d.includes('ssk') || d.includes('prim') || d.includes('sigorta') || d.includes('vergi')) return 'SGK Primi & Vergi Ödemesi';
+  if (d.includes('elektrik') || d.includes('ck akdeniz') || d.includes('enerji') || d.includes('tedas')) return 'Ortak Elektrik Faturası';
+  if (d.includes('tuz') || d.includes('aritma') || d.includes('klor')) return 'Tuz ve Arıtma Malzemesi';
+  if (d.includes('asansor')) return 'Asansör Periyodik Bakım';
+  if (d.includes('tadilat') || d.includes('tamirat') || d.includes('hirdavat') || d.includes('boya') || d.includes('usta')) return 'Site Tadilat ve Tamirat';
+  if (d.includes('kidem') || d.includes('tazminat')) return 'Kıdem Tazminatı Ödemesi';
+  if (d.includes('yuruyus') || d.includes('yol') || d.includes('parke')) return 'Yürüyüş Yolu Malzemesi';
+  return 'Belirlenemeyen / İşlenecek Giderler';
 }
 
 function extractSenderName(desc) {

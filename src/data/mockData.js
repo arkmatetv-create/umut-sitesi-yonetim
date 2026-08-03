@@ -19,13 +19,6 @@ export const INITIAL_FEE_CATEGORIES = [
     "defaultAmount": 1100,
     "period": "Tek Seferlik",
     "color": "#10b981"
-  },
-  {
-    "id": "asansor",
-    "name": "Asansör Revizyonu",
-    "defaultAmount": 2000,
-    "period": "Tek Seferlik",
-    "color": "#ec4899"
   }
 ];
 
