@@ -29,6 +29,8 @@ import MonthlyMatrix from './components/MonthlyMatrix';
 import Settings from './components/Settings';
 import LoginModal from './components/LoginModal';
 import MatchModal from './components/MatchModal';
+import KvkkPolicyModal from './components/KvkkPolicyModal';
+import { maskName, maskPhone } from './utils/kvkkMasker';
 
 import { 
   getSiteSettings, 
@@ -57,6 +59,8 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentManager, setCurrentManager] = useState('Yönetici');
   const [currentUserRole, setCurrentUserRole] = useState('admin'); // admin, auditor
+  const [isKvkkMasked, setIsKvkkMasked] = useState(false);
+  const [kvkkModalOpen, setKvkkModalOpen] = useState(false);
 
   const [activeMatchTxn, setActiveMatchTxn] = useState(null);
   const [preselectedWhatsAppResident, setPreselectedWhatsAppResident] = useState(null);
@@ -253,7 +257,32 @@ export default function App() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* KVKK Masking Toggle Button */}
+            <button 
+              className="btn btn-secondary"
+              onClick={() => setIsKvkkMasked(!isKvkkMasked)}
+              style={{ 
+                fontSize: '0.82rem', 
+                background: isKvkkMasked ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.06)',
+                border: isKvkkMasked ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(255,255,255,0.1)',
+                color: isKvkkMasked ? '#10b981' : 'var(--text-muted)'
+              }}
+              title="Kişisel verileri gizlemek / açmak için tıklayın"
+            >
+              {isKvkkMasked ? <EyeOff size={16} color="#10b981" /> : <Eye size={16} />}
+              {isKvkkMasked ? '🔒 KVKK Maskeleme: AÇIK' : '🔓 KVKK Maskeleme: KAPALI'}
+            </button>
+
+            <button 
+              className="btn btn-secondary"
+              onClick={() => setKvkkModalOpen(true)}
+              style={{ fontSize: '0.82rem' }}
+              title="KVKK Aydınlatma Metnini Görüntüle"
+            >
+              <ShieldCheck size={16} color="#10b981" /> KVKK Metni
+            </button>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: currentUserRole === 'auditor' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.06)', border: currentUserRole === 'auditor' ? '1px solid rgba(245, 158, 11, 0.4)' : 'none', padding: '6px 12px', borderRadius: 'var(--radius-md)', fontSize: '0.85rem' }}>
               <UserCheck size={16} color={currentUserRole === 'auditor' ? '#fbbf24' : '#10b981'} />
               <span style={{ fontWeight: 600, color: currentUserRole === 'auditor' ? '#fbbf24' : '#f8fafc' }}>
@@ -332,6 +361,7 @@ export default function App() {
             residents={residents}
             setResidents={setResidents}
             feeCategories={feeCategories}
+            isKvkkMasked={isKvkkMasked}
             onSelectResidentForWhatsApp={(resident) => {
               setPreselectedWhatsAppResident(resident);
               setActiveTab('whatsapp');
@@ -343,6 +373,7 @@ export default function App() {
           <MonthlyMatrix 
             residents={residents}
             setResidents={setResidents}
+            isKvkkMasked={isKvkkMasked}
           />
         )}
 
@@ -392,8 +423,15 @@ export default function App() {
           transaction={activeMatchTxn}
           residents={residents}
           feeCategories={feeCategories}
-          onClose={() => setActiveMatchTxn(null)}
           onConfirmMatch={handleConfirmMatch}
+          onClose={() => setActiveMatchTxn(null)}
+        />
+      )}
+
+      {/* KVKK Policy Modal */}
+      {kvkkModalOpen && (
+        <KvkkPolicyModal 
+          onClose={() => setKvkkModalOpen(false)}
         />
       )}
     </div>

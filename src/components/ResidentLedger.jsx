@@ -20,16 +20,18 @@ import * as XLSX from 'xlsx';
 import { parseSiteManagementExcel } from '../utils/excelImporter';
 import { exportToExcel, exportToPDF } from '../utils/reportExporter';
 
+import { maskName, maskPhone } from '../utils/kvkkMasker';
+
 export default function ResidentLedger({ 
   residents, 
   setResidents, 
   feeCategories,
-  onSelectResidentForWhatsApp
+  isKvkkMasked = false,
+  onSelectResidentForWhatsApp 
 }) {
   const handleExportLedgerExcel = () => {
     const data = residents.map(r => ({
       'Daire No': r.flatNo,
-      'Ev Sahibi (Malik)': r.ownerName || r.name,
       'Kiracı / Oturan': r.tenantName || 'Ev Sahibi Oturuyor',
       'Telefon': r.phone,
       'Aylık Aidat Borcu (TL)': r.debts?.aidat || 0,
@@ -287,12 +289,16 @@ export default function ResidentLedger({
                       </span>
                     </td>
                     <td>
-                      <strong style={{ color: 'white', display: 'block' }}>{r.ownerName || r.name}</strong>
+                      <strong style={{ color: 'white', display: 'block' }}>
+                        {isKvkkMasked ? maskName(r.ownerName || r.name) : (r.ownerName || r.name)}
+                      </strong>
                     </td>
                     <td>
                       {r.tenantName ? (
                         <div>
-                          <strong style={{ color: '#38bdf8' }}>{r.tenantName}</strong>
+                          <strong style={{ color: '#38bdf8' }}>
+                            {isKvkkMasked ? maskName(r.tenantName) : r.tenantName}
+                          </strong>
                           <span className="badge-status badge-warning" style={{ fontSize: '0.7rem', padding: '1px 5px', marginLeft: '6px' }}>
                             Kiracı
                           </span>
@@ -303,7 +309,7 @@ export default function ResidentLedger({
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
-                        <Phone size={14} /> {r.phone}
+                        <Phone size={14} /> {isKvkkMasked ? maskPhone(r.phone) : r.phone}
                       </div>
                     </td>
                     <td>
