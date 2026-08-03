@@ -1900,27 +1900,22 @@ export const INITIAL_BANK_TRANSACTIONS = [
 export const INITIAL_MESSAGE_TEMPLATES = [
   {
     id: 'ai_kurumsal',
-    title: '🤖 Yapay Zeka Kurumsal Borç İkazı (Özel Şablon)',
-    template: "Sayın {Sakin_Adı} ({Daire_No}), {Gönderim_Tarihi} tarihi itibariyle toplam aidat borcunuz {Aidat_Borcu} TL'dir{Kıdem_Cümlesi}{Yürüyüş_Cümlesi}. (Toplam Borç: {Toplam_Borç} TL). Ödemenizi yaptıysanız teşekkür ederiz. Ödemenizi yapmadıysanız sitemiz IBAN hesabına ({Banka_Adı} IBAN: {Site_IBAN}) 'Daire {Daire_No} {Sakin_Adı}' açıklamasıyla göndermenizi rica ederiz. İlgili tutarda bir hata veya farklı bir durum olduğunu düşünüyorsanız lütfen tarafımıza bilgi veriniz."
+    title: '🤖 Yapay Zeka Kurumsal Borç İkazı (Ultra Kibar & IBAN)',
+    template: "Sayın {Sakin_Adı} ({Daire_No}), {Gönderim_Tarihi} tarihi itibariyle sitemize ait güncel borç dökümünüz: {Borç_Detayı}. (Toplam Borcunuz: {Toplam_Borç} TL). Ödemenizi daha önce yaptıysanız gösterdiğiniz hassasiyet için teşekkür ederiz. Ödemenizi henüz yapmadıysanız sitemiz IBAN hesabına ({Banka_Adı} IBAN: {Site_IBAN}) 'Daire {Daire_No} {Sakin_Adı}' açıklamasıyla göndermenizi rica ederiz. İlgili tutarda herhangi bir hata veya farklı bir durum olduğunu düşünüyorsanız lütfen tarafımızla iletişime geçiniz. Sağlıklı günler dileriz."
   },
   {
     id: 'gecikmeli_aidat',
     title: 'Aylık Aidat Hatırlatması',
-    template: 'Sayın {Sakin_Adı} ({Daire_No}), site yönetimi olarak bilgilendiriyoruz. Hesabınızda {Aidat_Borcu} TL gecikmiş aidat borcunuz bulunmaktadır. Ödemenizi rica ederiz.'
+    template: "Sayın {Sakin_Adı} ({Daire_No}), site yönetimi olarak bilgilendiriyoruz. Hesabınızda {Aidat_Borcu} TL aidat borcunuz bulunmaktadır. Ödemenizi {Banka_Adı} IBAN: {Site_IBAN} hesabımıza yapmanızı rica ederiz. Bir hata olduğunu düşünüyorsanız lütfen bize ulaşınız."
   },
   {
     id: 'kidem_fonu',
     title: 'Kıdem Tazminatı Fonu Ödemesi',
-    template: 'Sayın {Sakin_Adı} ({Daire_No}), Kıdem Tazminatı Fonu için kalan borcunuz {Kıdem_Borcu} TL dur. Ödeme yapmanızı rica ederiz.'
+    template: "Sayın {Sakin_Adı} ({Daire_No}), Kıdem Tazminatı Fonu için kalan borcunuz {Kıdem_Borcu} TL'dir. Ödemenizi {Banka_Adı} IBAN: {Site_IBAN} hesabımıza yapmanızı rica ederiz."
   },
   {
     id: 'yuruyus_yolu',
     title: 'Yürüyüş Yolu Tadilat Ödemesi',
-    template: 'Sayın {Sakin_Adı} ({Daire_No}), Yürüyüş Yolu Tadilatı için kalan borcunuz {Yürüyüş_Borcu} TL dur. Ödeme yapmanızı rica ederiz.'
-  },
-  {
-    id: 'genel_toplam',
-    title: 'Ayrıntılı Toplam Borç Dökümü',
-    template: 'Sayın {Sakin_Adı} ({Daire_No}), toplam borcunuz {Borç_Tutarı} TL dir. (Aidat: {Aidat_Borcu} TL | Kıdem Tazminatı: {Kıdem_Borcu} TL | Yürüyüş Yolu: {Yürüyüş_Borcu} TL).'
+    template: "Sayın {Sakin_Adı} ({Daire_No}), Yürüyüş Yolu Tadilatı için kalan borcunuz {Yürüyüş_Borcu} TL'dir. Ödemenizi {Banka_Adı} IBAN: {Site_IBAN} hesabımıza yapmanızı rica ederiz."
   }
 ];
