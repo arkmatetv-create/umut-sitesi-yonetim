@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { 
   Receipt, 
   Plus, 
@@ -10,8 +11,12 @@ import {
   Tag, 
   CreditCard,
   Building,
-  CheckCircle2
+  CheckCircle2,
+  UploadCloud,
+  Sparkles
 } from 'lucide-react';
+import { parseBankStatementExcel, parseBankStatementPDFText } from '../utils/bankStatementParser';
+import StatementApprovalModal from './StatementApprovalModal';
 
 export default function Expenses({ expenses, setExpenses, residents }) {
   const [modalOpen, setModalOpen] = useState(false);
@@ -94,6 +99,54 @@ export default function Expenses({ expenses, setExpenses, residents }) {
     }
   };
 
+  // --- Ekstre (AI) Gider Yükleme ---
+  const [pendingExpenses, setPendingExpenses] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const handleStatementUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type.includes('pdf');
+    setAiLoading(true);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        let parsed;
+        if (isPdf) {
+          parsed = parseBankStatementPDFText(evt.target.result, [], [], expenses);
+        } else {
+          const wb = XLSX.read(evt.target.result, { type: 'binary' });
+          parsed = parseBankStatementExcel(wb, [], [], expenses);
+        }
+        setAiLoading(false);
+        // Only show outgoing expenses (negative amount rows)
+        if (parsed.autoExpenses && parsed.autoExpenses.length > 0) {
+          // Open the approval modal with only expenses (no income transactions)
+          setPendingExpenses({ transactions: [], autoExpenses: parsed.autoExpenses });
+        } else {
+          alert('Ekstrede otomatik tespit edilebilecek gider (eksi bakıyeli satır) bulunamadı. Lütfen banka ekstrenizi kontrol edin.');
+        }
+      } catch (err) {
+        setAiLoading(false);
+        console.error(err);
+        alert('Dosya işlenirken hata oluştu: ' + err.message);
+      }
+    };
+    if (isPdf) reader.readAsText(file);
+    else reader.readAsBinaryString(file);
+    // Reset input so same file can be re-uploaded
+    e.target.value = '';
+  };
+
+  const handleConfirmExpenses = ({ approvedExpenses }) => {
+    if (approvedExpenses && approvedExpenses.length > 0) {
+      setExpenses(prev => [...approvedExpenses, ...(prev || [])]);
+      alert(`✅ ${approvedExpenses.length} adet gider yapay zeka tarafından sınıflandırılıp onaylanarak gider tablosuna eklendi!`);
+    }
+    setPendingExpenses(null);
+  };
+
   return (
     <div className="fade-in">
       {/* Financial Overview Summary */}
@@ -150,9 +203,31 @@ export default function Expenses({ expenses, setExpenses, residents }) {
             </p>
           </div>
 
-          <button className="btn btn-primary" onClick={() => setModalOpen(true)}>
-            <Plus size={18} /> Yeni Gider Kaydı Ekle
-          </button>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {/* AI Ekstre Yükleme Butonu */}
+            <label 
+              className="btn btn-secondary" 
+              style={{ cursor: 'pointer', background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.2))', border: '1px solid rgba(139,92,246,0.4)', color: '#a78bfa' }}
+              title="Banka ekstresini yükleyin — Yapay zeka gidenleri otomatik ayıklayacak"
+            >
+              {aiLoading ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Sparkles size={16} color="#818cf8" /> Yapay Zeka İşliyor...</span>
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><UploadCloud size={16} /> ✨ AI Ekstre Yükle (.xlsx / .pdf)</span>
+              )}
+              <input
+                type="file"
+                accept=".xlsx, .xls, .csv, .pdf, application/pdf"
+                onChange={handleStatementUpload}
+                style={{ display: 'none' }}
+                disabled={aiLoading}
+              />
+            </label>
+
+            <button className="btn btn-primary" onClick={() => setModalOpen(true)} style={{ background: 'linear-gradient(135deg, #fb7185, #e11d48)' }}>
+              <Plus size={18} /> Yeni Gider Kaydı Ekle
+            </button>
+          </div>
         </div>
       </div>
 
@@ -334,6 +409,14 @@ export default function Expenses({ expenses, setExpenses, residents }) {
             </form>
           </div>
         </div>
+      )}
+      {/* Statement Approval Modal (only expenses tab) */}
+      {pendingExpenses && (
+        <StatementApprovalModal
+          pendingData={pendingExpenses}
+          onConfirm={handleConfirmExpenses}
+          onClose={() => setPendingExpenses(null)}
+        />
       )}
     </div>
   );
