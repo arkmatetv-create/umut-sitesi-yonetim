@@ -214,12 +214,12 @@ export default function BankReconciliation({
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <label className="btn btn-primary" style={{ cursor: 'pointer' }}>
-              <UploadCloud size={18} /> Excel Ekstresi Yükle
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <label className="btn btn-primary" style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #6366f1, #4f46e5)' }}>
+              <UploadCloud size={18} /> 📄 Excel veya PDF Ekstresi Yükle
               <input 
                 type="file" 
-                accept=".xlsx, .xls, .csv" 
+                accept=".xlsx, .xls, .csv, .pdf, .txt, application/pdf" 
                 onChange={handleFileUpload} 
                 style={{ display: 'none' }} 
               />
