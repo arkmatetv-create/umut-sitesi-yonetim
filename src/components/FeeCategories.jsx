@@ -21,6 +21,12 @@ export default function FeeCategories({ feeCategories, setFeeCategories }) {
     setNewCategory({ name: '', defaultAmount: 1000, period: 'Tek Seferlik', color: '#6366f1' });
   };
 
+  const handleDeleteCategory = (id, name) => {
+    if (confirm(`'${name}' ödeme kalemini silmek istediğinize emin misiniz?`)) {
+      setFeeCategories(feeCategories.filter(c => c.id !== id));
+    }
+  };
+
   return (
     <div className="fade-in">
       <div className="glass-card" style={{ marginBottom: '24px' }}>
@@ -41,10 +47,19 @@ export default function FeeCategories({ feeCategories, setFeeCategories }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
         {feeCategories.map(cat => (
-          <div key={cat.id} className="glass-card" style={{ borderLeft: `4px solid ${cat.color}` }}>
+          <div key={cat.id} className="glass-card" style={{ borderLeft: `4px solid ${cat.color}`, position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h3 style={{ fontSize: '1.15rem' }}>{cat.name}</h3>
-              <span className="badge-status badge-info">{cat.period}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="badge-status badge-info">{cat.period}</span>
+                <button 
+                  onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                  style={{ background: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)', color: '#fb7185', padding: '6px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                  title="Kalemi Sil"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
             <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'white', marginBottom: '8px' }}>
               ₺{cat.defaultAmount.toLocaleString('tr-TR')}
