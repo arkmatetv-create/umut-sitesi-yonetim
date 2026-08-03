@@ -13,10 +13,12 @@ import {
   Download,
   DollarSign,
   UploadCloud,
-  Sparkles
+  Sparkles,
+  FileSpreadsheet
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { parseSiteManagementExcel } from '../utils/excelImporter';
+import { exportToExcel, exportToPDF } from '../utils/reportExporter';
 
 export default function ResidentLedger({ 
   residents, 
@@ -24,6 +26,35 @@ export default function ResidentLedger({
   feeCategories,
   onSelectResidentForWhatsApp
 }) {
+  const handleExportLedgerExcel = () => {
+    const data = residents.map(r => ({
+      'Daire No': r.flatNo,
+      'Ev Sahibi (Malik)': r.ownerName || r.name,
+      'Kiracı / Oturan': r.tenantName || 'Ev Sahibi Oturuyor',
+      'Telefon': r.phone,
+      'Aylık Aidat Borcu (TL)': r.debts?.aidat || 0,
+      'Kıdem Tazminatı Borcu (TL)': r.debts?.kidem || 0,
+      'Yürüyüş Yolu Borcu (TL)': r.debts?.yuruyus || 0,
+      'Toplam Kalan Borç (TL)': (r.debts?.aidat || 0) + (r.debts?.kidem || 0) + (r.debts?.yuruyus || 0)
+    }));
+    exportToExcel(data, 'Umut_Sitesi_Daire_Cari_Hesaplar');
+  };
+
+  const handleExportLedgerPDF = () => {
+    const headers = ['Daire No', 'Ev Sahibi (Malik)', 'Kiracı / Oturan', 'Telefon', 'Aidat Borcu', 'Kıdem Borcu', 'Yürüyüş Borcu', 'Toplam Borç'];
+    const rows = residents.map(r => [
+      r.flatNo,
+      r.ownerName || r.name,
+      r.tenantName || 'Ev Sahibi Oturuyor',
+      r.phone,
+      `₺${(r.debts?.aidat || 0).toLocaleString('tr-TR')}`,
+      `₺${(r.debts?.kidem || 0).toLocaleString('tr-TR')}`,
+      `₺${(r.debts?.yuruyus || 0).toLocaleString('tr-TR')}`,
+      `₺${((r.debts?.aidat || 0) + (r.debts?.kidem || 0) + (r.debts?.yuruyus || 0)).toLocaleString('tr-TR')}`
+    ]);
+    exportToPDF('Daire Cari Hesap Borç Ekstreleri', headers, rows, 'Umut_Sitesi_Cari_Hesaplar');
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [blockFilter, setBlockFilter] = useState('all'); // all, A Blok, B Blok
   const [debtFilter, setDebtFilter] = useState('all'); // all, only_debtors, 2months_plus
@@ -167,9 +198,15 @@ export default function ResidentLedger({
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary" onClick={handleExportLedgerExcel}>
+              <FileSpreadsheet size={18} color="#10b981" /> Excel Raporu (.xlsx)
+            </button>
+            <button className="btn btn-secondary" onClick={handleExportLedgerPDF}>
+              <Download size={18} color="#fb7185" /> PDF Raporu (.pdf)
+            </button>
             <label className="btn btn-primary" style={{ cursor: 'pointer', background: 'linear-gradient(135deg, #10b981, #059669)' }}>
-              <UploadCloud size={18} /> Excel Tablosu Yükle / Senkronize Et
+              <UploadCloud size={18} /> Excel Yükle
               <input 
                 type="file" 
                 accept=".xlsx, .xls, .csv" 
@@ -177,12 +214,8 @@ export default function ResidentLedger({
                 style={{ display: 'none' }} 
               />
             </label>
-
-            <button className="btn btn-secondary" onClick={exportToExcel}>
-              <Download size={18} /> Excel'e Aktar
-            </button>
             <button className="btn btn-secondary" onClick={() => setNewResidentModal(true)}>
-              <Plus size={18} /> Yeni Daire Ekleyin
+              <Plus size={18} /> Yeni Daire
             </button>
           </div>
         </div>

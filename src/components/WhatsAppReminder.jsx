@@ -55,16 +55,40 @@ export default function WhatsAppReminder({
 
   // Render dynamic template tags for a specific resident
   const formatMessageForResident = (resident, templateStr) => {
-    const aidatDebt = resident.debts.aidat || 0;
-    const ekBorc = (resident.debts.kidem || 0) + (resident.debts.yuruyus || 0) + (resident.debts.asansor || 0);
+    const todayStr = new Date().toLocaleDateString('tr-TR');
+    const aidatDebt = resident.debts?.aidat || 0;
+    const kidemDebt = resident.debts?.kidem || 0;
+    const yuruyusDebt = resident.debts?.yuruyus || 0;
+    const asansorDebt = resident.debts?.asansor || 0;
+    const ekBorc = kidemDebt + yuruyusDebt + asansorDebt;
     const totalDebt = aidatDebt + ekBorc;
+
+    let kidemClause = '';
+    if (kidemDebt > 0) {
+      kidemClause = `, Kıdem Tazminatı Fonu borcunuz: ${kidemDebt.toLocaleString('tr-TR')} TL`;
+    }
+
+    let yuruyusClause = '';
+    if (yuruyusDebt > 0) {
+      yuruyusClause = `, Yürüyüş Yolu Ödemeniz: ${yuruyusDebt.toLocaleString('tr-TR')} TL`;
+    }
+
+    const bankName = 'Garanti BBVA';
+    const bankIban = 'TR14 0006 2000 4460 0006 2894 65';
 
     return templateStr
       .replace(/\{Sakin_Adı\}/g, resident.name)
       .replace(/\{Daire_No\}/g, resident.flatNo)
+      .replace(/\{Gönderim_Tarihi\}/g, todayStr)
       .replace(/\{Aidat_Borcu\}/g, aidatDebt.toLocaleString('tr-TR'))
+      .replace(/\{Kıdem_Cümlesi\}/g, kidemClause)
+      .replace(/\{Yürüyüş_Cümlesi\}/g, yuruyusClause)
+      .replace(/\{Kıdem_Borcu\}/g, kidemDebt.toLocaleString('tr-TR'))
+      .replace(/\{Yürüyüş_Borcu\}/g, yuruyusDebt.toLocaleString('tr-TR'))
       .replace(/\{Ek_Borç_Tutarı\}/g, ekBorc.toLocaleString('tr-TR'))
       .replace(/\{Toplam_Borç\}/g, totalDebt.toLocaleString('tr-TR'))
+      .replace(/\{Banka_Adı\}/g, bankName)
+      .replace(/\{Site_IBAN\}/g, bankIban)
       .replace(/\{Gecikme_Ay\}/g, resident.unpaidMonths || 1);
   };
 

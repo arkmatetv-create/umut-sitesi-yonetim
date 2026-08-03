@@ -1,11 +1,47 @@
-import React, { useState } from 'react';
-import { Table, Calendar, Filter, CheckCircle2, Save, Sparkles } from 'lucide-react';
+import { exportToExcel, exportToPDF } from '../utils/reportExporter';
+import { FileSpreadsheet, Download } from 'lucide-react';
 
 const MONTHS = ['OCAK', 'ŞUBAT', 'MART', 'NİSAN', 'MAYIS', 'HAZİRAN', 'TEMMUZ', 'AĞUSTOS', 'EYLÜL', 'EKİM', 'KASIM', 'ARALIK'];
 
 export default function MonthlyMatrix({ residents, setResidents }) {
   const [selectedBlock, setSelectedBlock] = useState('all'); // all, A Blok, B Blok
   const [selectedFeeType, setSelectedFeeType] = useState('aidat'); // aidat, kidem
+
+  const handleExportMatrixExcel = () => {
+    const data = filteredResidents.map(r => {
+      const fieldKey = selectedFeeType === 'aidat' ? 'monthlyAidat' : 'monthlyKidem';
+      const monthly = r[fieldKey] || {};
+      const rowData = {
+        'Daire No': r.flatNo,
+        'Sakin Adı': r.name,
+      };
+      MONTHS.forEach(m => {
+        rowData[m] = monthly[m] || 0;
+      });
+      rowData['Toplam Ödenen (TL)'] = Object.values(monthly).reduce((a, b) => a + b, 0);
+      rowData['Kalan Borç (TL)'] = r.debts?.[selectedFeeType] || 0;
+      return rowData;
+    });
+    exportToExcel(data, `Umut_Sitesi_${selectedFeeType.toUpperCase()}_Aylik_Matris`);
+  };
+
+  const handleExportMatrixPDF = () => {
+    const headers = ['Daire No', 'Sakin Adı', ...MONTHS, 'Toplam', 'Borç'];
+    const rows = filteredResidents.map(r => {
+      const fieldKey = selectedFeeType === 'aidat' ? 'monthlyAidat' : 'monthlyKidem';
+      const monthly = r[fieldKey] || {};
+      const monthCells = MONTHS.map(m => monthly[m] ? `₺${monthly[m]}` : '-');
+      const totalPaid = Object.values(monthly).reduce((a, b) => a + b, 0);
+      return [
+        r.flatNo,
+        r.name,
+        ...monthCells,
+        `₺${totalPaid.toLocaleString('tr-TR')}`,
+        `₺${(r.debts?.[selectedFeeType] || 0).toLocaleString('tr-TR')}`
+      ];
+    });
+    exportToPDF(`${selectedFeeType === 'aidat' ? 'Aylık Aidat' : 'Kıdem Tazminatı'} Çizelge Matrisi`, headers, rows, `Umut_Sitesi_${selectedFeeType}_Matris`);
+  };
 
   const filteredResidents = residents.filter(r => {
     if (selectedBlock !== 'all' && r.block !== selectedBlock) return false;
@@ -55,7 +91,13 @@ export default function MonthlyMatrix({ residents, setResidents }) {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button className="btn btn-secondary" onClick={handleExportMatrixExcel}>
+              <FileSpreadsheet size={16} color="#10b981" /> Excel (.xlsx)
+            </button>
+            <button className="btn btn-secondary" onClick={handleExportMatrixPDF}>
+              <Download size={16} color="#fb7185" /> PDF (.pdf)
+            </button>
             <select 
               className="form-select"
               value={selectedFeeType}

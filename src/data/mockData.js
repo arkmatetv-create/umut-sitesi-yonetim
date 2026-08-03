@@ -1906,6 +1906,11 @@ export const INITIAL_BANK_TRANSACTIONS = [
 
 export const INITIAL_MESSAGE_TEMPLATES = [
   {
+    id: 'ai_kurumsal',
+    title: '🤖 Yapay Zeka Kurumsal Borç İkazı (Özel Şablon)',
+    template: "Sayın {Sakin_Adı} ({Daire_No}), {Gönderim_Tarihi} tarihi itibariyle toplam aidat borcunuz {Aidat_Borcu} TL'dir{Kıdem_Cümlesi}{Yürüyüş_Cümlesi}. (Toplam Borç: {Toplam_Borç} TL). Ödemenizi yaptıysanız teşekkür ederiz. Ödemenizi yapmadıysanız sitemiz IBAN hesabına ({Banka_Adı} IBAN: {Site_IBAN}) 'Daire {Daire_No} {Sakin_Adı}' açıklamasıyla göndermenizi rica ederiz. İlgili tutarda bir hata veya farklı bir durum olduğunu düşünüyorsanız lütfen tarafımıza bilgi veriniz."
+  },
+  {
     id: 'gecikmeli_aidat',
     title: 'Aylık Aidat Hatırlatması',
     template: 'Sayın {Sakin_Adı} ({Daire_No}), site yönetimi olarak bilgilendiriyoruz. Hesabınızda {Aidat_Borcu} TL gecikmiş aidat borcunuz bulunmaktadır. Ödemenizi rica ederiz.'
