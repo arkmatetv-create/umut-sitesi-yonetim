@@ -1,8 +1,12 @@
 import * as XLSX from 'xlsx';
 
-export function parseBankStatementExcel(workbook, residents = []) {
+export function parseBankStatementExcel(workbook, residents = [], existingTransactions = [], existingExpenses = []) {
   const transactions = [];
   const autoExpenses = [];
+  let skippedDuplicatesCount = 0;
+
+  const existingTxnKeys = new Set(existingTransactions.map(t => `${t.date}_${t.amount}_${t.description}`));
+  const existingExpKeys = new Set(existingExpenses.map(e => `${e.date}_${e.amount}_${e.description}`));
 
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
@@ -51,6 +55,11 @@ export function parseBankStatementExcel(workbook, residents = []) {
     // 1. Handle Outgoing Expense (Amount < 0)
     if (amount < 0) {
       const positiveAmount = Math.abs(amount);
+      const key = `${formattedDate}_${positiveAmount}_${description}`;
+      if (existingExpKeys.has(key)) {
+        skippedDuplicatesCount++;
+        return;
+      }
       autoExpenses.push({
         id: `EXP-AUTO-${receiptNo || index}`,
         date: formattedDate,
@@ -65,6 +74,12 @@ export function parseBankStatementExcel(workbook, residents = []) {
     }
 
     // 2. Handle Incoming Payment (Amount > 0)
+    const key = `${formattedDate}_${amount}_${description}`;
+    if (existingTxnKeys.has(key)) {
+      skippedDuplicatesCount++;
+      return;
+    }
+
     const category = detectPaymentCategory(description);
     const match = matchResidentForTransaction(description, amount, residents);
 
@@ -86,7 +101,8 @@ export function parseBankStatementExcel(workbook, residents = []) {
 
   return {
     transactions,
-    autoExpenses
+    autoExpenses,
+    skippedDuplicatesCount
   };
 }
 

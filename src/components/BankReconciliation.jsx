@@ -50,18 +50,18 @@ export default function BankReconciliation({
       try {
         const bstr = evt.target.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
-        const parsed = parseBankStatementExcel(wb, residents);
-        if (parsed.transactions && parsed.transactions.length > 0) {
-          setBankTransactions(prev => [...parsed.transactions, ...prev]);
+        const parsed = parseBankStatementExcel(wb, residents, bankTransactions);
+        if (parsed.transactions && (parsed.transactions.length > 0 || parsed.skippedDuplicatesCount > 0)) {
+          if (parsed.transactions.length > 0) setBankTransactions(prev => [...parsed.transactions, ...prev]);
           if (setExpenses && parsed.autoExpenses.length > 0) {
             setExpenses(prev => [...parsed.autoExpenses, ...(prev || [])]);
           }
           const matched = parsed.transactions.filter(t => t.status === 'matched').length;
           setAiProcessingNotice('');
-          alert(`✅ Banka ekstresi Gemini AI ile başarıyla yüklendi!\n• Gelen Transferler: ${parsed.transactions.length} (${matched} adedi otomatik sakine eşleşti)\n• Otomatik İşlenen Giderler: ${parsed.autoExpenses.length}`);
+          alert(`✅ Banka ekstresi Gemini AI ile başarıyla işlendi!\n• Yeni Gelen Transferler: ${parsed.transactions.length} (${matched} adedi otomatik sakine eşleşti)\n• Otomatik İşlenen Giderler: ${parsed.autoExpenses.length}\n• Mükerrer (Önceden Yüklü) İşlem Atlandı: ${parsed.skippedDuplicatesCount} adet`);
         } else {
           setAiProcessingNotice('');
-          alert('Banka ekstresinde işlem satırı okunamadı.');
+          alert('Girdiğiniz ekstrededeki tüm işlemler daha önce sisteme işlendiği için mükerrer işlem oluşturulmadı.');
         }
       } catch (err) {
         console.error(err);
