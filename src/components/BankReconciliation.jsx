@@ -12,7 +12,7 @@ import {
   Info,
   Layers
 } from 'lucide-react';
-import { parseBankStatementExcel } from '../utils/bankStatementParser';
+import { parseBankStatementExcel, parseBankStatementPDFText } from '../utils/bankStatementParser';
 import { createBackupSnapshot, addAuditLog } from '../utils/backupManager';
 import { aiSuggestMatchForTransaction } from '../utils/geminiStatementAI';
 import StatementApprovalModal from './StatementApprovalModal';

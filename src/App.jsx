@@ -14,7 +14,9 @@ import {
   Wallet,
   Settings as SettingsIcon,
   LogOut,
-  UserCheck
+  UserCheck,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { parseSiteManagementExcel } from './utils/excelImporter';
 import * as XLSX from 'xlsx';
